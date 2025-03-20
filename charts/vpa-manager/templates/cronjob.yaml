@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vpa-auto-creator
+  namespace: kube-system
+spec:
+  schedule: "*/10 * * * *"  # Runs every 10 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: vpa-manager
+          restartPolicy: OnFailure
+          containers:
+            - name: vpa-manager
+              image: bitnami/kubectl:latest  # Uses kubectl to interact with the cluster
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  #!/bin/sh
+                  set -e
+
+                  # Get CronJob UID for owner reference
+                  CRONJOB_UID=$(kubectl get cronjob -n kube-system vpa-auto-creator -o jsonpath="{.metadata.uid}")
+
+                  # Get all namespaces
+                  NAMESPACES=$(kubectl get namespaces -o jsonpath="{.items[*].metadata.name}")
+
+                  for ns in $NAMESPACES; do
+                    echo "Processing namespace: $ns"
+
+                    # Get all deployments and statefulsets
+                    DEPLOYMENTS=$(kubectl get deployments -n $ns -o jsonpath="{.items[*].metadata.name}")
+                    STATEFULSETS=$(kubectl get statefulsets -n $ns -o jsonpath="{.items[*].metadata.name}")
+
+                    for app in $DEPLOYMENTS $STATEFULSETS; do
+                      echo "Checking VPA for $app in namespace $ns..."
+
+                      # Check if VPA already exists
+                      if kubectl get vpa -n $ns $app >/dev/null 2>&1; then
+                        echo "VPA already exists for $app in namespace $ns, skipping."
+                      else
+                        echo "Creating VPA for $app in namespace $ns..."
+                        cat <<EOF | kubectl apply -f -
+                        apiVersion: autoscaling.k8s.io/v1
+                        kind: VerticalPodAutoscaler
+                        metadata:
+                          name: $app
+                          namespace: $ns
+                          ownerReferences:
+                            - apiVersion: batch/v1
+                              kind: CronJob
+                              name: vpa-auto-creator
+                              uid: "$CRONJOB_UID"
+                              controller: false
+                              blockOwnerDeletion: false
+                        spec:
+                          targetRef:
+                            apiVersion: apps/v1
+                            kind: $(kubectl get deployment -n $ns $app -o jsonpath='{.kind}' 2>/dev/null || echo "StatefulSet")
+                            name: $app
+                          updatePolicy:
+                            updateMode: "Off"
+                        EOF
+                      fi
+                    done
+                  done
