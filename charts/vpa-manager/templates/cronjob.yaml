@@ -26,7 +26,7 @@ spec:
                 - -c
                 - |
                   #!/bin/sh
-                  set -e
+                  set -ex
 
                   # Get CronJob UID for owner reference
                   CRONJOB_UID=$(kubectl get cronjob -n kube-system vpa-auto-creator -o jsonpath="{.metadata.uid}")
@@ -49,19 +49,15 @@ spec:
                         echo "VPA already exists for $app in namespace $ns, skipping."
                       else
                         echo "Creating VPA for $app in namespace $ns..."
-                        cat <<EOF | kubectl apply -f -
+                        cat <<EOF | kubectl apply -n $ns -f -
                         apiVersion: autoscaling.k8s.io/v1
                         kind: VerticalPodAutoscaler
                         metadata:
                           name: $app
                           namespace: $ns
-                          ownerReferences:
-                            - apiVersion: batch/v1
-                              kind: CronJob
-                              name: vpa-auto-creator
-                              uid: "$CRONJOB_UID"
-                              controller: false
-                              blockOwnerDeletion: false
+                          labels:
+                            app.kubernetes.io/name: vpc-manager
+                            app.kubernetes.io/managed-by: nothing-delete-by-name-label
                         spec:
                           targetRef:
                             apiVersion: apps/v1
@@ -69,7 +65,7 @@ spec:
                             name: $app
                           updatePolicy:
                             updateMode: "Off"
-                        EOF
+                  EOF
                       fi
                     done
                   done
