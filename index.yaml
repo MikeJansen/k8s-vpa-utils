@@ -3,6 +3,25 @@ entries:
   vpa-manager:
   - apiVersion: v2
     appVersion: 0.0.1
+    created: "2025-03-21T16:44:23.122690262Z"
+    description: A Helm chart for Kubernetes Vertical Pod Autoscaler (VPA) manager
+    digest: 5f41183bc740e843137c710ade954dfde5bf1b614472b0f819951c2c39205fe9
+    keywords:
+    - vpa
+    - autoscaler
+    - kubernetes
+    maintainers:
+    - email: m@cr0w.co
+      name: Michael A. Jansen
+    name: vpa-manager
+    sources:
+    - https://github.com/MikeJansen/k8s-vpa-utils/charts/vpa-manager
+    type: application
+    urls:
+    - https://github.com/MikeJansen/k8s-vpa-utils/releases/download/vpa-manager-0.0.6/vpa-manager-0.0.6.tgz
+    version: 0.0.6
+  - apiVersion: v2
+    appVersion: 0.0.1
     created: "2025-03-20T19:31:55.774626231Z"
     description: A Helm chart for Kubernetes Vertical Pod Autoscaler (VPA) manager
     digest: 8b1ecce2c6d012850224a4a4db59e2ff466f917a5812b4d744b230874c07c179
@@ -20,4 +39,4 @@ entries:
     urls:
     - https://github.com/MikeJansen/k8s-vpa-utils/releases/download/vpa-manager-0.0.2/vpa-manager-0.0.2.tgz
     version: 0.0.2
-generated: "2025-03-20T19:31:55.774635138Z"
+generated: "2025-03-21T16:44:23.122700882Z"
